@@ -30,4 +30,9 @@ public class UserInfo{
 			inverseJoinColumns = @JoinColumn(name = "role_id")
 	)
 	private Set<UserRoles> userRoles = new HashSet<>();
+
+	public UserInfo(String username, String password){
+		this.username = username;
+		this.password = password;
+	}
 }

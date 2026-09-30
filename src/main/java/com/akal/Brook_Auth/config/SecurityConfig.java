@@ -33,7 +33,7 @@ public class SecurityConfig {
                 .csrf(CsrfConfigurer::disable)
                 .cors(CorsConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/v1/login", "/auth/v1/signup", "/auth/v1/refresh").permitAll()
+                        .requestMatchers("/auth/v1/login", "/auth/v1/signup", "/auth/v1/refreshToken", "/auth/v1/ping","/auth/v1/health").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sessionManagement -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

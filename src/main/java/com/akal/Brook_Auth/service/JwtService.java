@@ -12,6 +12,9 @@ import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 @Service
@@ -21,6 +24,23 @@ public class JwtService {
     
     JwtService(@Value("${Jwt.secret}")String SECRET){
         this.SECRET = SECRET;
+    }
+
+    public String generateToken(String username){
+        Map<String, Objects> claims = new HashMap<>();
+        return createToken(username, claims);
+    }
+    private String createToken(String username, Map<String, Objects> claims){
+        return Jwts.builder()
+                .claims()
+                .empty()
+                .add(claims)
+                .and()
+                .subject(username)
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 10))
+                .signWith(getSignKey(), Jwts.SIG.HS256)
+                .compact();
     }
     public String extractUsername(String token){
         return extractClaims(token, Claims::getSubject);
