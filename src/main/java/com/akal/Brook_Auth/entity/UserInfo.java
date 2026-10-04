@@ -1,9 +1,6 @@
 package com.akal.Brook_Auth.entity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -12,6 +9,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
+@Builder
 @Table(name = "user_info")
 public class UserInfo{
 	@Id
