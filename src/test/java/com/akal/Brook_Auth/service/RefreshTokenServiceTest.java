@@ -1,7 +1,6 @@
 package com.akal.Brook_Auth.service;
 
 
-import com.akal.Brook_Auth.BrookAuthApplication;
 import com.akal.Brook_Auth.entity.RefreshToken;
 import com.akal.Brook_Auth.entity.UserInfo;
 import com.akal.Brook_Auth.repository.RefreshTokenRepository;
@@ -9,14 +8,13 @@ import com.akal.Brook_Auth.repository.UserInfoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.context.ContextConfiguration;
 
 import java.time.Instant;
 import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -51,7 +49,18 @@ public class RefreshTokenServiceTest {
         assertSame(refreshToken, refreshTokenGenerated);
         assertSame(userInfo, refreshTokenGenerated.getUserInfo());
         verify(userInfoRepository).findByUsername(username);
-        verify(refreshTokenRepository).save(any(RefreshToken.class));
+
+        ArgumentCaptor<RefreshToken> captor =
+                ArgumentCaptor.forClass(RefreshToken.class);
+
+        verify(refreshTokenRepository).save(captor.capture());
+
+        RefreshToken savedToken = captor.getValue();
+
+        assertNotNull(savedToken.getRefreshToken());
+        assertEquals(userInfo, savedToken.getUserInfo());
+        assertNotNull(savedToken.getExpiryInstant());
+        assertTrue(savedToken.getExpiryInstant().isAfter(Instant.now()));
     }
 
     @Test
@@ -66,5 +75,64 @@ public class RefreshTokenServiceTest {
 
         verify(userInfoRepository).findByUsername(username);
         verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
+    }
+
+    @Test
+    public void isExpiredTokenWhenTokenIsValid() {
+        RefreshToken result = refreshTokenService.isExpiredToken(refreshToken);
+
+        assertSame(refreshToken, result);
+
+        verify(refreshTokenRepository, never())
+                .delete(any(RefreshToken.class));
+    }
+
+    @Test
+    public void isExpiredTokenWhenTokenIsExpired() {
+        refreshToken.setExpiryInstant(Instant.now().minusSeconds(30));
+
+        RuntimeException exception = assertThrows(
+                RuntimeException.class,
+                () -> refreshTokenService.isExpiredToken(refreshToken)
+        );
+
+        assertEquals(
+                refreshToken.getRefreshToken()
+                        + " Refresh token is expired. Please login again...!",
+                exception.getMessage()
+        );
+
+        verify(refreshTokenRepository).delete(refreshToken);
+    }
+
+    @Test
+    public void findByTokenTest() {
+        String token = refreshToken.getRefreshToken();
+
+        when(refreshTokenRepository.findByRefreshToken(token))
+                .thenReturn(Optional.of(refreshToken));
+
+        Optional<RefreshToken> result =
+                refreshTokenService.findByToken(token);
+
+        assertTrue(result.isPresent());
+        assertSame(refreshToken, result.get());
+
+        verify(refreshTokenRepository).findByRefreshToken(token);
+    }
+
+    @Test
+    public void findByTokenWhenTokenDoesNotExist() {
+        String token = "unknown-token";
+
+        when(refreshTokenRepository.findByRefreshToken(token))
+                .thenReturn(Optional.empty());
+
+        Optional<RefreshToken> result =
+                refreshTokenService.findByToken(token);
+
+        assertTrue(result.isEmpty());
+
+        verify(refreshTokenRepository).findByRefreshToken(token);
     }
 }
